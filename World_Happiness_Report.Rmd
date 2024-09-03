@@ -1,0 +1,826 @@
+---
+title: "World Happiness Report"
+author: "StelaGk"
+date: "2024-04-10"
+output:
+  html_document:
+    toc: yes  
+  html_notebook:   
+    number_sections: yes    
+    toc: yes  
+    toc_float: yes
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages
+
+First, we will upload the necessary libraries, that we will need for our analysis
+```{r libraries}
+#maybe not all of them will be needed eventually
+library(readr)
+library(readxl)
+library(tidyr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+#library(geojsonio)
+#library(broom)
+library(plotly)
+library(patchwork)
+library(reshape2)
+library(gridExtra)
+library(ggcorrplot)
+library(emmeans)
+library(multcompView)
+library(multcomp)
+```
+
+
+## Load data sets
+
+We will load the 5 data set files for each year
+
+```{r datasets}
+#we have them in a folder - path (C:/Users/Dell_i5/Desktop/courses/Done/2nd semester/Applied Data Science and Visualisation/mini project/World_Happiness_Report_data/dataset.csv) that might need changing when we upload the data sets or move them to different folders and the code for others to use, and we replace NA values with 0 
+
+happiness_2015 <- read.csv("C:/Users/Dell_i5/Desktop/courses/Done/2nd semester/Applied Data Science and Visualisation/mini project/World_Happiness_Report_data/2015.csv", na.strings = c("N/A", "NA", "-"))
+#happiness_2015 <- replace(happiness_2015, is.na(happiness_2015), 0) #if we want to replace NA values with 0
+
+happiness_2016 <- read.csv("C:/Users/Dell_i5/Desktop/courses/Done/2nd semester/Applied Data Science and Visualisation/mini project/World_Happiness_Report_data/2016.csv", na.strings = c("N/A", "NA", "-"))
+#happiness_2016 <- replace(happiness_2016, is.na(happiness_2016), 0)
+
+happiness_2017 <- read.csv("C:/Users/Dell_i5/Desktop/courses/Done/2nd semester/Applied Data Science and Visualisation/mini project/World_Happiness_Report_data/2017.csv", na.strings = c("N/A", "NA", "-"))
+#happiness_2017 <- replace(happiness_2017, is.na(happiness_2017), 0)
+
+happiness_2018 <- read.csv("C:/Users/Dell_i5/Desktop/courses/Done/2nd semester/Applied Data Science and Visualisation/mini project/World_Happiness_Report_data/2018.csv", na.strings = c("N/A", "NA", "-"))
+#happiness_2018 <- replace(happiness_2018, is.na(happiness_2018), 0)
+
+happiness_2019 <- read.csv("C:/Users/Dell_i5/Desktop/courses/Done/2nd semester/Applied Data Science and Visualisation/mini project/World_Happiness_Report_data/2019.csv", na.strings = c("N/A", "NA", "-"))
+#happiness_2019 <- replace(happiness_2019, is.na(happiness_2019), 0)
+
+```
+
+Now we will look at the first few rows of our data sets
+```{r datasets first rows}
+head(happiness_2015)
+head(happiness_2016)
+head(happiness_2017)
+head(happiness_2018)
+head(happiness_2019)
+```
+
+## Description of the data
+
+The data are taken from the Gallup World Poll. The sampled people have to answer the question: "How would you rate your happiness on a scale of 0 to 10 where 10 is the happiest. The columns following the happiness score estimate the extent to which each of six factors – economic production, social support, life expectancy, freedom, absence of corruption, and generosity – contribute to making life evaluations higher in each country than they are in Dystopia, a hypothetical country that has values equal to the world’s lowest national averages for each of the six factors. They have no impact on the total score reported for each country, but they do explain why some countries rank higher than others.
+
+Features Explanation:
+1. Happiness Rank: Rank of any country in a particular year (Numeric variable)
+
+2. Country: Name of the country (Categorical variable)
+
+3. Region: Geographical region of each country (Categorical variable)
+
+4. Standard Error: The standard error of the happiness score (Numeric variable)
+
+5. Happiness Score: Happiness score as the sum of all numerical columns in the datasets (Numeric variable)
+
+6. Economy (GDP per Capita): The extent to which GDP contributes to the calculation of the Happiness Score (Numeric variable)
+
+7. Trust: A quantification of the people’s perceived trust in their governments (Numeric variable)
+
+8. Health (Life Expectancy): The extent to which Life expectancy contributed to the calculation of the Happiness Score (Numeric variable)
+
+9. Generosity: Numerical value estimated based on the perception of Generosity experienced by poll takers in their country (Numeric variable)
+
+10. Family - Social Support: Metric estimating satisfaction of people with their friends and family (Numeric variable)
+
+11. Freedom: Perception of freedom quantified (Numeric variable)
+
+12. Dystopia: Hypothetically the saddest country in the world (Numeric variable)
+
+13. Lower Confidence Interval: Lower Confidence Interval of the Happiness Score (Numeric variable)
+
+14. Upper Confidence Interval: Upper Confidence Interval of the Happiness Score (Numeric variable)
+
+We can see that not all files contain the same number of rows and columns. This means that some countries were not included in some of the data sets, while they were included in other data sets. Also, in some of the reports some indicators were excluded or new ones were introduced in others.
+
+## Cleaning data sets
+
+We will need the names of all the columns of all the data sets for our next steps.
+
+```{r datasets column names}
+colnames(happiness_2015)
+colnames(happiness_2016)
+colnames(happiness_2017)
+colnames(happiness_2018)
+colnames(happiness_2019)
+```
+
+We will make one single data set with the country ranks and scores throughout the 5 years. 
+
+```{r renaming}
+#we will rename some columns, so as to be able to distinguish which rank belongs to which year and then remove the rest of the rows in each table
+
+happy_2015 <- happiness_2015 %>% 
+  rename(c("Rank_2015" = "Happiness.Rank" ,
+           "Score_2015" = "Happiness.Score"))
+happy_2015 <- happy_2015[, -c(5:12)]
+
+happy_2016 <- happiness_2016 %>% 
+  rename(c("Rank_2016" = "Happiness.Rank" ,
+           "Score_2016" = "Happiness.Score"))
+happy_2016 <- happy_2016[, -c(2, 5:13)]
+
+happy_2017 <- happiness_2017 %>% 
+  rename(c("Rank_2017" = "Happiness.Rank" ,
+           "Score_2017" = "Happiness.Score"))
+happy_2017 <- happy_2017[, -c(4:12)]
+
+happy_2018 <- happiness_2018 %>% 
+  rename(c("Rank_2018" = "Overall.rank",
+           "Score_2018" = "Score",
+           "Country"= "Country.or.region"))
+happy_2018 <- happy_2018[, -c(4:9)]
+
+happy_2019 <- happiness_2019 %>% 
+  rename(c("Rank_2019" = "Overall.rank",
+           "Score_2019" = "Score",
+           "Country"= "Country.or.region"))
+happy_2019 <- happy_2019[, -c(4:9)]
+
+```
+
+```{r merging}
+#we will merge the 5 years to get 1 table with the ranks and scores for each year
+
+merged_ranks_scores <- happy_2015 %>%
+  left_join(happy_2016, by = "Country") %>%
+  left_join(happy_2017, by = "Country") %>%
+  left_join(happy_2018, by = "Country") %>%
+  left_join(happy_2019, by = "Country")
+
+```
+
+We will also use an online data set that includes the codes for every country to help make our maps later.
+```{r dataset with country codes}
+df <- read.csv("https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv")
+df <- df[, -c(2)]
+df <- df %>% 
+  rename(c("Country" = "COUNTRY"))
+
+merged_ranks_scores <- merged_ranks_scores %>%
+  left_join(df, by = "Country")
+```
+
+Now, we are going to create a single table including all the data. But first, we're going to need a new column in each data set for the year, but also the same number of columns in all data sets (tidying the data sets). 
+
+
+```{r adding a column}
+#we add a column with the year
+
+data_2015 <- happiness_2015 %>%
+  mutate(year = 2015)
+data_2016 <- happiness_2016 %>%
+  mutate(year = 2016)
+data_2017 <- happiness_2017 %>%
+  mutate(year = 2017)
+data_2018 <- happiness_2018 %>%
+  mutate(year = 2018)
+data_2019 <- happiness_2019 %>%
+  mutate(year = 2019)
+
+```
+
+
+Now we want all the data sets to have the same names for the columns that match and we want them to appear in the same order, so that there is homogeneity in the data and they are more easily understood, e.g. the columns with the name "Happiness.Rank" should be renamed as "Rank". We also excluded the data for the Standard.Error, Lower.Confidence.Interval, Upper.Confidence.Interval, Whisker.high, Whisker.low and Dystopia.Residual, because we are not going to use them for this analysis and we added the Region in all the years.
+
+
+```{r excluding columns}
+#we will exclude the columns that we won't work with
+
+data_2015 <- data_2015[, -c(5,12)]
+data_2016 <- data_2016[, -c(5,6,13)]
+data_2017 <- data_2017[, -c(4,5,12)]
+
+```
+
+
+```{r renaming and merging}
+#we will rename the columns, for homogeneity purposes
+
+data_2015 <- data_2015 %>% 
+  rename(c("Rank" = "Happiness.Rank" ,
+           "Score" = "Happiness.Score",
+           "GDP" = "Economy..GDP.per.Capita.",
+           "Health" = "Health..Life.Expectancy.",
+           "Corruption" = "Trust..Government.Corruption."))
+
+data_2016 <- data_2016 %>% 
+  rename(c("Rank" = "Happiness.Rank" ,
+           "Score" = "Happiness.Score",
+           "GDP" = "Economy..GDP.per.Capita.",
+           "Health" = "Health..Life.Expectancy.",
+           "Corruption" = "Trust..Government.Corruption."))
+
+data_2017 <- data_2017 %>% 
+  rename(c("Rank" = "Happiness.Rank" ,
+           "Score" = "Happiness.Score",
+           "GDP" = "Economy..GDP.per.Capita.",
+           "Health" = "Health..Life.Expectancy.",
+           "Corruption" = "Trust..Government.Corruption."))
+
+data_2018 <- data_2018 %>% 
+  rename(c("Rank"   = "Overall.rank",
+           "Country"= "Country.or.region",
+           "GDP"    = "GDP.per.capita",
+           "Family" = "Social.support",
+           "Health" = "Healthy.life.expectancy",
+           "Freedom"= "Freedom.to.make.life.choices",
+           "Corruption"= "Perceptions.of.corruption"))
+
+data_2019 <- data_2019 %>% 
+  rename(c("Rank"   = "Overall.rank",
+           "Country"= "Country.or.region",
+           "GDP"    = "GDP.per.capita",
+           "Family" = "Social.support",
+           "Health" = "Healthy.life.expectancy",
+           "Freedom"= "Freedom.to.make.life.choices",
+           "Corruption"= "Perceptions.of.corruption"))
+
+#And add the Region column to the data sets that was not included
+
+region <- data_2015 [, -c(3:13)]
+data_2017 <- data_2017 %>%
+  left_join(region, by = "Country")
+data_2018 <- data_2018 %>%
+  left_join(region, by = "Country")
+data_2019 <- data_2019 %>%
+  left_join(region, by = "Country")
+
+```
+
+
+```{r changing column order}
+#We change the order the columns appear
+
+data_2015 <- data_2015[,c(3,1,2,4:8,10,9,11)]
+data_2016 <- data_2016[,c(3,1,2,4:8,10,9,11)]
+data_2017 <- data_2017[,c(2,1,11,3:10)]
+data_2018 <- data_2018[,c(1,2,11,3:10)]
+data_2019 <- data_2019[,c(1,2,11,3:10)]
+
+```
+
+We will feel the gaps that we identified they exist, so as not to have problems with them later
+
+```{r filling gaps}
+data_2017 <- data_2017 %>%
+  mutate(Region = ifelse(Country == "Taiwan Province of China", "Eastern Asia", Region))
+data_2017 <- data_2017 %>%
+  mutate(Region = ifelse(Country == "Belize", "Latin America and Caribbean", Region))
+data_2017 <- data_2017 %>%
+  mutate(Region = ifelse(Country == "Hong Kong S.A.R., China", "Eastern Asia", Region))
+data_2017 <- data_2017 %>%
+  mutate(Region = ifelse(Country == "Somalia", "Sub-Saharan Africa", Region))
+data_2017 <- data_2017 %>%
+  mutate(Region = ifelse(Country == "Namibia", "Sub-Saharan Africa", Region))
+data_2017 <- data_2017 %>%
+  mutate(Region = ifelse(Country == "South Sudan", "Sub-Saharan Africa", Region))
+data_2018 <- data_2018 %>%
+  mutate(Region = ifelse(Country == "Trinidad & Tobago", "Latin America and Caribbean", Region))
+data_2018 <- data_2018 %>%
+  mutate(Region = ifelse(Country == "Belize", "Latin America and Caribbean", Region))
+data_2018 <- data_2018 %>%
+  mutate(Region = ifelse(Country == "Northern Cyprus", "Central and Eastern Europe", Region))
+data_2018 <- data_2018 %>%
+  mutate(Region = ifelse(Country == "Somalia", "Sub-Saharan Africa", Region))
+data_2018 <- data_2018 %>%
+  mutate(Region = ifelse(Country == "Namibia", "Sub-Saharan Africa", Region))
+data_2018 <- data_2018 %>%
+  mutate(Region = ifelse(Country == "South Sudan", "Sub-Saharan Africa", Region))
+data_2019 <- data_2019 %>%
+  mutate(Region = ifelse(Country == "Trinidad & Tobago", "Latin America and Caribbean", Region))
+data_2019 <- data_2019 %>%
+  mutate(Region = ifelse(Country == "Northern Cyprus", "Central and Eastern Europe", Region))
+data_2019 <- data_2019 %>%
+  mutate(Region = ifelse(Country == "North Macedonia", "Western Europe", Region))
+data_2019 <- data_2019 %>%
+  mutate(Region = ifelse(Country == "Somalia", "Sub-Saharan Africa", Region))
+data_2019 <- data_2019 %>%
+  mutate(Region = ifelse(Country == "Namibia", "Sub-Saharan Africa", Region))
+data_2019 <- data_2019 %>%
+  mutate(Region = ifelse(Country == "Gambia", "Sub-Saharan Africa", Region))
+data_2019 <- data_2019 %>%
+  mutate(Region = ifelse(Country == "South Sudan", "Sub-Saharan Africa", Region))
+```
+
+```{r combining tables}
+#Now we are able to make one table with all the data that we need
+
+all_years <- rbind(data_2015, data_2016, data_2017, data_2018, data_2019)
+str(all_years)
+```
+
+## World map
+
+So, now we have many data sets that we can work with, including "all_years" and "merged_ranks_scores". Since ther are not major differences between the years (as we will see later), we will work with the 2019 data set
+
+```{r 2019 world map}
+#Creating a world map for the 2019 Happiness scores
+
+fig2 <- plot_ly(merged_ranks_scores, 
+                type='choropleth', 
+                locations=merged_ranks_scores$CODE, 
+                z=merged_ranks_scores$Score_2019, 
+                text=merged_ranks_scores$Rank_2019, 
+                colorscale="Reds")
+
+fig2 <- fig2 %>% 
+   colorbar(title = "Happiness Scores") %>% 
+   layout(title = 'World Map of the 2019 Happiness Scores and Ranks')
+
+fig2
+```
+
+
+## Analysis 
+
+### Basic descriptives
+
+We will calculate the Summary Statistics (mean, median, standard deviation, min, max values) for each variable for 2019
+
+```{r 2019 basic descriptives}
+summary_2019 <- summary(data_2019[-c(1,2,3,11)]) 
+print(summary_2019)
+
+sd_2019 <- sapply(data_2019[-c(1,2,3,11)], sd)
+print(sd_2019)
+```
+Interpretation of the results:
+
+1. "Generosity" and "Corruption" have generally very low SDs, 0.095 and 0.094 respectively, meaning that most data points are close to the mean, which can be observed by the summary statistics as well. This indicates that the extend to which these variables are important to people from different countries is more or less the same for most countries.
+
+2. As expected, the SD for "Score" (1.113) is relatively high compared to the range of scores (2.853 to 7.769).
+
+3. The SDs for "GDP" (0.398) and "Family" (0.299) are also relatively high compared to the range of their values, meaning that the extend to which people from different countries believe that these factors are important, varies depending on the country.
+
+### Visualization of the distribution of each variable for each year
+
+To visualize the distribution of all the variables for 2019, we made their histograms.
+
+```{r 2019 histograms}
+#histograms for 2019
+
+hist(data_2016$Score, 
+     col = "skyblue",
+     breaks = 20,
+     xlab = "Happiness Score",
+     ylab = "Frequency",
+     main = "Distribution of Happiness Scores in 2019",
+     border = "black",
+     xlim = c(2, 8),
+     ylim = c(0, 20),
+     axes = TRUE
+     )
+hist(data_2019$GDP)
+hist(data_2019$Family)
+hist(data_2019$Health)
+hist(data_2019$Freedom)
+hist(data_2019$Generosity)
+hist(data_2019$Corruption)
+```
+
+We can clearly see from the histograms that none of the variables are normally distributed, so we will have to transform our data to use them later for the Regression Analysis.
+
+### Correlation and Regression Analysis
+
+Two of our research questions are 
+
+- "Which factor is considered to contribute more to happiness?" and
+
+- "How does each variable affect the Happiness Score?"
+
+To answer these questions, we will have to run correlation tests and do the linear regression for each variable for 2019 comparing it with the Happiness Scores 
+
+The coefficient for each independent variable (factor) in your multiple regression model represents the change in the dependent variable (happiness score) for a one-unit change in that particular independent variable, holding all other variables constant.
+
+```{r Multiple Regression Model}
+
+#First we set our Regression model, to see which variables have the most significant effect on Score
+model <- lm(Score ~ GDP + Family + Health + Freedom + Generosity + Corruption, data = data_2019)
+summary(model)
+
+# Extract p-values
+p_values <- summary(model)$coefficients[, 4] 
+
+# Calculate negative logarithm of p-values
+neg_log_p_values <- -log10(p_values) 
+
+# Create a dataframe for plotting and plot
+plot_data <- data.frame(Factor = names(neg_log_p_values), Negative_Log_P_Value = neg_log_p_values)
+ggplot(plot_data, aes(x = reorder(Factor, Negative_Log_P_Value), y = Negative_Log_P_Value)) +
+  geom_bar(stat = "identity", fill = "skyblue", width = 0.5) +
+  coord_flip() +
+  labs(x = "Factor", y = "-log10(P-Value)", title = "Negative Logarithm of P-Values for Regression Coefficients") +
+  theme_minimal()
+
+
+model_res <- model$residuals
+
+hist(model_res)
+```
+
+This plot helps in identifying which factors have the most significant impact on the happiness score based on their associated p-values. Factors with taller bars (higher negative logarithms) are more statistically significant predictors of the happiness score, while factors with shorter bars (lower negative logarithms) have less statistical significance.
+
+Multiple Linear Regression Results:
+
+1. The multiple linear regression model estimates the relationship between the dependent variable (Score) and multiple independent variables (GDP, Family, Health, Freedom, Generosity, Corruption) simultaneously.
+2. The coefficients represent the estimated change in the dependent variable for a one-unit change in the independent variable, holding all other variables constant.
+3. The p-values associated with each coefficient test the null hypothesis that the corresponding coefficient is equal to zero. A low p-value (< 0.05) indicates that the coefficient is statistically significant.
+
+Because GDP, Family, Health, and Freedom have very low p-values, we have strong evidence against the null hypothesis. Therefore, they are considered to have statistically significant linear relationships with the Happiness Score.
+Generosity and Corruption, on the other hand have higher p-values, indicating that there is not enough evidence to reject the null hypothesis. Therefore, they are not considered to have statistically significant linear relationships with the Score variable.
+
+```{r}
+# Extract coefficients and p-values
+coefficients <- summary(model)$coefficients
+p_values <- coefficients[, 4]
+
+# Create a dataframe for plotting
+plot_data <- data.frame(
+  Factor = rownames(coefficients)[-1], 
+  P_Value = p_values[-1]
+)
+
+# Create the first plot showing negative logarithm of p-values
+
+p1 <- ggplot(plot_data, aes(x = reorder(Factor, P_Value), y = -log10(P_Value))) +
+  geom_bar(stat = "identity", fill = ifelse(plot_data$P_Value < 0.05, "red", "gray"), width = 0.5) +
+  coord_flip() +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") +
+  labs(x = "Factor", y = "-log10(P-Value)", title = str_wrap("Negative Logarithm of P-Values for Regression Coefficients", width = 30)) +
+  theme_minimal()
+
+# Create the second plot showing p-values directly
+p2 <- ggplot(plot_data, aes(x = reorder(Factor, P_Value), y = P_Value)) +
+  geom_bar(stat = "identity", fill = ifelse(plot_data$P_Value < 0.05, "red", "gray"), width = 0.5) +
+  coord_flip() +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "blue") +
+  labs(x = "Factor", y = "P-Value", title = str_wrap("P-Values for Regression Coefficients", width = 30)) +
+  theme_minimal()
+
+# Display both plots side by side
+grid.arrange(p1, p2, nrow = 1)
+```
+
+Bars that are colored red indicate coefficients with p-values less than 0.05, suggesting statistical significance. Gray bars indicate coefficients with p-values greater than or equal to 0.05. By examining these plots, we can identify which factors are statistically significant predictors of the happiness score (dependent variable) in your regression model. Factors with lower p-values or higher negative logarithms of p-values are more likely to have a significant impact on the happiness score.
+
+```{r 2019 Correlation and Simple regression}
+# Correlation test and Simple linear regression for 2019
+
+cor.test(data_2019$Score, data_2019$GDP)
+cor.test(data_2019$Score, data_2019$Family)
+cor.test(data_2019$Score, data_2019$Health)
+cor.test(data_2019$Score, data_2019$Freedom)
+cor.test(data_2019$Score, data_2019$Generosity, method = "s")
+cor.test(data_2019$Score, data_2019$Corruption, method = "s")
+
+plot1 <- data_2019 %>% 
+  ggplot(aes(x = GDP, y = Score)) +
+  geom_point() +
+  geom_smooth(method='lm', color='red') +
+  labs(title='Happiness Score vs Economy (GDP per Capita)') +
+  theme(plot.title = element_text(size = 6))
+
+plot2 <- data_2019 %>% 
+  ggplot(aes(x = Family, y = Score)) +
+  geom_point() +
+  geom_smooth(method='lm', color='red') +
+  labs(title='Happiness Score vs Family') +
+  theme(plot.title = element_text(size = 10))
+
+plot3 <- data_2019 %>% 
+  ggplot(aes(x = Health, y = Score)) +
+  geom_point() +
+  geom_smooth(method='lm', color='red') +
+  labs(title='Happiness Score vs Health (Life Expectancy)') +
+  theme(plot.title = element_text(size = 7))
+
+plot4 <- data_2019 %>% 
+  ggplot(aes(x = Freedom, y = Score)) +
+  geom_point() +
+  geom_smooth(method='lm', color='red') +
+  labs(title='Happiness Score vs Freedom') +
+  theme(plot.title = element_text(size = 10))
+
+plot5 <- data_2019 %>% 
+  ggplot(aes(x = Corruption, y = Score)) +
+  geom_point() +
+  labs(title='Happiness Score vs Trust (Government Corruption)') +
+  theme(plot.title = element_text(size = 6))
+
+plot6 <- data_2019 %>% 
+  ggplot(aes(x = Generosity, y = Score)) +
+  geom_point() +
+  labs(title='Happiness Score vs Generosity') +
+  theme(plot.title = element_text(size = 10))
+
+# Arranging plots in a grid layout
+plots_grid <- plot1 + plot2 + plot3 + plot4 + plot5 + plot6
+plots_grid 
+
+#In some cases there is a linear relation between the happiness score and the variables, that's why we ran Pearson's correlation test. In the last two cases (that of "Corruption" and "Generosity"), there is no apparent linear relation between the happiness score and the variables, so we ran the Spearman's rank correlation test.
+
+```
+
+In the above graphs, we combined data from different regions. So, we will show what it looks like if we separate these Regions. 
+
+```{r Combining the names of Regions}
+
+#We will change - combine the names of the Regions for both homogeneity purposes and because otherwise we had too many regions
+#For instance we will rename the regions "Eastern Asia", "Southeastern Asia" and "Southern Asia" into "Asia", to get the data for the whole continent 
+
+data_2019 <- mutate(data_2019, Region = ifelse(Region == "Australia and New Zealand", "Oceania", Region))
+data_2019 <- mutate(data_2019, Region = ifelse(Region == "Central and Eastern Europe", "Europe", Region))
+data_2019 <- mutate(data_2019, Region = ifelse(Region == "Eastern Asia", "Asia", Region))
+data_2019 <- mutate(data_2019, Region = ifelse(Region == "Middle East and Northern Africa", "Africa", Region))
+data_2019 <- mutate(data_2019, Region = ifelse(Region == "Southeastern Asia", "Asia", Region))
+data_2019 <- mutate(data_2019, Region = ifelse(Region == "Southern Asia", "Asia", Region))
+data_2019 <- mutate(data_2019, Region = ifelse(Region == "Sub-Saharan Africa", "Africa", Region))
+data_2019 <- mutate(data_2019, Region = ifelse(Region == "Western Europe", "Europe", Region))
+
+```
+
+```{r 2019 Correlation and Simple linear regression by region}
+#Now we want to show that the relationship between the Happiness Scores and the other variable will not be the same for all the regions. An example is the scores compared to GDP, grouped by regions for 2019.
+
+ggplot(data_2019, aes(x = GDP, y = Score, color = Region)) +
+  geom_point(size = 2, alpha = 0.8) + 
+  scale_colour_manual(values = c("steelblue3", "lightblue3","coral", "green4", "burlywood3", "khaki2")) +
+  theme(plot.title = element_text(size = 25, hjust = .5),
+        axis.title = element_text(size = 12, face = "bold"))+
+geom_smooth(method = "lm", se = F)
+```
+
+#### Correlation Heatmaps
+
+We also want to do the heatmap of the variables for 2019, to see which ones are most related
+First we will have to fit the multiple linear regression model
+
+From the histogram it seems like we do have a normal distribution, however to be completely sure, we will make the Q-Q plot. 
+
+```{r assumptions of linear regression}
+#checking the assumptions of linear regression
+plot(model, which = 2) #Normality
+plot(model, which = c(1, 3)) #Equal variance?
+```
+
+The model looks ok. Let's see the results
+
+```{r 2019 heatmap}
+#Creating the heatmap for 2019
+
+d_ <- data_2019[, c(4:10)]
+cor_ <- round(cor(d_),2)
+
+#Helper function to reorder the correlation matrix 
+# Use correlation between variables as distance
+reorder_cor_ <- function(cor_){
+dd <- as.dist((1-cor_)/2)
+hc <- hclust(dd)
+cor_ <- cor_[hc$order, hc$order]
+}
+
+# Get lower triangle of the correlation matrix
+get_lower_tri<-function(cor_){
+    cor_[lower.tri(cor_)] <- NA
+    return(cor_)
+  }
+lower_tri <- get_lower_tri(cor_)
+melted_ <- melt(lower_tri, na.rm = TRUE)
+
+# Reorder the correlation matrix
+cor_ <- reorder_cor_(cor_)
+
+# Create a ggheatmap
+ggheatmap <- ggplot(melted_, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+    name="Correlation") +
+  theme_minimal()+ # minimal theme
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+ coord_fixed()
+# Print the heatmap
+
+# Add correlation coefficients on the heatmap
+ggheatmap + 
+geom_text(aes(Var2, Var1, label = value), color = "black", size = 4) +
+theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.grid.major = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+  axis.ticks = element_blank(),
+  legend.justification = c(1, 0),
+  legend.position = c(0.6, 0.7),
+  legend.direction = "horizontal")+
+  guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                title.position = "top", title.hjust = 0.5))
+
+```
+
+Correlation Test Results:
+
+1. The correlation tests examine the pairwise relationships between the dependent variable (Score) and each independent variable (GDP, Social Support, Health, Freedom, Generosity, Corruption) individually.
+2. The correlation coefficient (cor) represents the strength and direction of the linear relationship between two variables. It ranges from -1 to 1, where 1 indicates a perfect positive linear relationship, -1 indicates a perfect negative linear relationship, and 0 indicates no linear relationship.
+3. The p-value associated with each correlation coefficient tests the null hypothesis that there is no linear relationship between the two variables. A low p-value (< 0.05) indicates that the correlation is statistically significant.
+
+
+Differences:
+
+1. The multiple linear regression model estimates the combined effect of all independent variables on the dependent variable, while correlation tests examine the pairwise relationships between each independent variable and the dependent variable individually.
+2. The coefficients in the regression model provide information about the direction and magnitude of the relationship, while correlation coefficients provide information about the strength and direction of the linear relationship.
+3. The p-values in the regression model test the significance of each independent variable's effect on the dependent variable in the presence of other variables, while the p-values in the correlation tests test the significance of the linear relationship between two variables.
+
+#### One-way ANOVA
+
+One more research question we wanted to answer is "Are there significant differences in happiness levels between regions?". To answer this question we will run one-way ANOVA between the different regions
+
+First, let's visualize our data
+```{r visualizing the data}
+data_2019 %>% 
+  ggplot(aes(x = Region, y = Score)) + 
+  geom_point(aes(fill = Region),
+             position = position_jitter(0.1, seed = 666),
+             alpha = 0.8,    #Makes dots transparent 
+             size = 3,    #Make dots larger or smaller 
+             shape = 21,    #Shape = 21 gives open circle 
+             color = "white") +    #Border around each dot 
+  scale_color_manual(values = c("steelblue3", "lightblue3","coral", "green4", "burlywood3", "khaki2"))  +
+  labs(x = "Region", y = "Happiness Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+We will take a quick look at the summary statistics
+
+```{r summary statistics}
+Score_summary <- data_2019 %>% 
+  filter(is.na(Score) == F) %>% 
+  group_by(Region) %>% 
+  summarise(
+    mean = mean(Score),
+    var = var(Score),
+    sd = sd(Score),
+    n = n()
+  )
+
+head(Score_summary)
+```
+
+We know for fact that our dependent variable (Score) is numeric, and the independent variable (Region) is categorical. Let's confirm that 
+
+```{r showing the data}
+str(data_2019)
+```
+
+We will now set up the linear model
+
+```{r linear model}
+model_Score <- lm(Score ~ Region, data = data_2019)
+```
+
+
+Checking the assumptions of ANOVA
+
+1. Independence: We can, indeed, say that the measurement of one observation does not affect the other. 
+
+2. Normality: the residues (errors) must be normally distributed. 
+
+We will check for normality by making the qq-plot of the residues
+
+```{r normal qq plot}
+plot(model_Score, which = 2)
+```
+
+The residues do look normally distributed.
+
+3. Homoscedasticity: equal variance across groups
+
+We will now check for homoscedasticity
+
+```{r plots for checking homoscedasticity}
+plot(model_Score, which = c(1, 3)) 
+```
+
+
+The first graph is called residues vs. Fitted. It is plotting the means of groups (in this case Regions) on x axis, and the spread of errors on the y axis. If the variances are equal, we should see roughly same amount of spread across the line. It looks fine.
+
+The second graph is called scale location. Again x axis is still the means of groups, but the y axis is now square root of absolute values of errors. If the variances are equal, we should see roughly a flat line. It looks more or less ok.
+
+Perhaps the last thing to check is outliers. In this case, when you plot the data, you saw there were no outliers.
+
+So now we can do an ANOVA
+
+```{r ANOVA}
+anova(model_Score)
+```
+
+We got an F value of 22.609 which is >> 1. The p value, or Pr(>F) is the probability of finding F values more extreme than the observed F value, if F = 1. In this case we have F = 22.609, if F were equal to 1, the probability of finding F > 22.609 is < 2.2e-16. So very small. Thus, we should reject the null hypothesis of F = 1. This means the means of the 6 Regions are different.
+
+The next step is to do a Tukey test to see the Regions with the most significant differences.
+
+```{r Tukey test}
+estimate_Score <- emmeans(model_Score, pairwise ~ Region)
+estimate_Score$contrasts
+```
+
+From the pairwise comparisons of the Regions, we see that Africa and Asia show the most significant differences with the rest of the continents. 
+What's more, North America and Oceania have the highest p-value, indicating a very big similarity in the happiness score.
+
+```{r}
+cld(estimate_Score$emmeans, Letters = letters)
+```
+
+If two rows share the same letter, it means the means of that two groups are not statistically different. In this example, Africa and Asia belong to group a, the rest of the continents belong to group b, so the means of the regions in group a are significantly different from the ones from group b, consistent with what the contrasts told us.
+
+
+### Trends in world regions - Time Series Analysis
+
+Another research question we set is "How do the scores change over time (from 2015 to 2019) in each region?"
+
+```{r Combining the names of Regions again}
+
+#We will change - combine the names of the Regions for both homogeneity purposes and because otherwise we had too many regions
+#For instance we will rename the regions "Eastern Asia", "Southeastern Asia" and "Southern Asia" into "Asia", to get the data for the whole continent 
+
+merged_ranks_scores <- mutate(merged_ranks_scores, Region = ifelse(Region == "Australia and New Zealand", "Oceania", Region))
+merged_ranks_scores <- mutate(merged_ranks_scores, Region = ifelse(Region == "Central and Eastern Europe", "Europe", Region))
+merged_ranks_scores <- mutate(merged_ranks_scores, Region = ifelse(Region == "Eastern Asia", "Asia", Region))
+merged_ranks_scores <- mutate(merged_ranks_scores, Region = ifelse(Region == "Middle East and Northern Africa", "Africa", Region))
+merged_ranks_scores <- mutate(merged_ranks_scores, Region = ifelse(Region == "Southeastern Asia", "Asia", Region))
+merged_ranks_scores <- mutate(merged_ranks_scores, Region = ifelse(Region == "Southern Asia", "Asia", Region))
+merged_ranks_scores <- mutate(merged_ranks_scores, Region = ifelse(Region == "Sub-Saharan Africa", "Africa", Region))
+merged_ranks_scores <- mutate(merged_ranks_scores, Region = ifelse(Region == "Western Europe", "Europe", Region))
+
+```
+
+
+```{r World regions trends}
+
+# Calculate mean scores for each year by region excluding 0 values
+# While creating the table "merged_ranks_scores" for some countries there weren't data for all the years, producing as a result NA values in the table. So, with the command "filter" we will exclude the NA values from our calculations 
+
+merged_by_region <- merged_ranks_scores[, -c(3,5,7,9,11,13)] %>%
+  filter(Score_2015 != is.na(Score_2015) & Score_2016 != is.na(Score_2015) & Score_2017 != is.na(Score_2015) & Score_2018 != is.na(Score_2015) & Score_2019 != is.na(Score_2015)) %>%
+  group_by(Region) %>%
+  summarise(mean_2015 = mean(Score_2015),
+            mean_2016 = mean(Score_2016),
+            mean_2017 = mean(Score_2017),
+            mean_2018 = mean(Score_2018),
+            mean_2019 = mean(Score_2019))
+
+print(merged_by_region)
+```
+
+```{r Time Series}
+# Convert the merged_by_region data frame to long format for easier plotting
+merged_by_region_long <- pivot_longer(merged_by_region, 
+                                      cols = starts_with("mean_"), 
+                                      names_to = "Year", 
+                                      names_prefix = "mean_",
+                                      values_to = "Mean_Score")
+
+# Convert the "Year" column to a numeric format
+merged_by_region_long$Year <- as.numeric(gsub("mean_", "", merged_by_region_long$Year))
+
+# Plotting
+ggplot(merged_by_region_long, aes(x = Year, y = Mean_Score, group = Region, color = Region)) +
+  geom_line(linewidth = 1.5) +
+  geom_point(size = 3) +
+  labs(title = "Mean Happiness Score by Region Over Time",
+       x = "Year",
+       y = "Mean Happiness Score",
+       color = "Region") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.text = element_text(size = 10),
+        plot.title = element_text(hjust = 0.5)) + 
+  scale_x_continuous(breaks = seq(min(merged_by_region_long$Year), max(merged_by_region_long$Year), by = 1)) +
+  scale_color_manual(values = c("steelblue3", "lightblue3","coral", "green4", "burlywood3", "khaki2"))  
+```
+
+
+
+
+
+
